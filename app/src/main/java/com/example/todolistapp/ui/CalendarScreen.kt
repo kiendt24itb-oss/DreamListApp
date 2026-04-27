@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
 
@@ -40,104 +42,193 @@ fun CalendarScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxWidth().fillMaxHeight(0.4f)
         )
         Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f).background(
-            Brush.verticalGradient(colors = listOf(Color.Transparent, PurpleBg.copy(alpha = 0.7f), PurpleBg), startY = 200f)
+            Brush.verticalGradient(
+                colors = listOf(Color.Transparent, PurpleBg.copy(alpha = 0.7f), PurpleBg),
+                startY = 200f
+            )
         ))
 
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
-            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp).statusBarsPadding()) {
-                Text("Lịch ước mơ ✨", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 10.dp).statusBarsPadding()) {
+                Text("Lịch ước mơ ✨", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
-            // KHỐI LỊCH (Đã lên màu Header)
-            Surface(
-                modifier = Modifier.padding(horizontal = 20.dp).shadow(8.dp, RoundedCornerShape(20.dp)),
-                color = Color.White
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    MonthSelectorMini()
-                    WeekHeaderMini()
-                    CalendarGridMini(widthClass)
+            // --- CỐ ĐỊNH PHẦN TRÊN ---
+            Column {
+                // Khối Lịch (Giữ Surface để tách biệt nền ảnh)
+                Surface(
+                    modifier = Modifier.padding(horizontal = 20.dp).shadow(8.dp, RoundedCornerShape(24.dp)),
+                    color = Color.White
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        MonthSelectorMini()
+                        WeekHeaderMini()
+                        CalendarGridMini(widthClass)
+                    }
                 }
-            }
 
-            // PHẦN STATS STYLE NGANG (Icon động + Màu số thực)
-            Surface(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
+                // KHỐI STATS STYLE MỚI: NHỎ, GỌN, SANG
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 28.dp, vertical = 14.dp), // Tăng lề ngang để icon dịch trái hơn
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Thẻ 1: Tổng công việc
-                    StatItemHorizontal(
+                    CompactStatCard(
                         value = "28",
-                        desc = "Tổng công việc\ntrong tháng",
+                        label = "Tổng công việc",
                         icon = Icons.Default.MenuBook,
-                        color = Color(0xFF6200EE)
+                        color = DeepPurple
                     )
 
-                    // Vạch chia
-                    Box(modifier = Modifier.width(1.dp).height(45.dp).background(Color.LightGray.copy(alpha = 0.3f)))
+                    // Vạch chia mảnh mai
+                    Box(modifier = Modifier.width(1.dp).height(22.dp).background(Color.LightGray.copy(alpha = 0.5f)))
 
-                    // Thẻ 2: Tiến độ động (Circular Progress)
-                    StatProgressItem(
+                    // Thẻ 2: Tiến độ
+                    CompactProgressCard(
                         percentage = 0.67f,
-                        desc = "Tiến độ tháng\n(20/30 task)",
+                        label = "Tiến độ",
                         color = Color(0xFF03DAC6)
                     )
                 }
             }
 
-            // TIÊU ĐỀ TASK
-            Text("Kế hoạch ngày 15/05", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = DeepPurple, modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
+            // --- VÙNG CUỘN (DANH SÁCH TASK) ---
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    "Kế hoạch ngày 15/05",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
+                    color = DeepPurple,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
+                )
 
-            // DANH SÁCH TASK
-            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 100.dp)) {
                 DailyTaskItemSync("Đọc 30 trang sách", "07:00", "Hoàn thành", GreenStatus, Icons.Default.MenuBook)
                 DailyTaskItemSync("Tập luyện 30 phút", "18:00", "Hoàn thành", GreenStatus, Icons.Default.FitnessCenter)
                 DailyTaskItemSync("Hoàn thành bài luận", "19:30", "Đang làm", BlueStatus, Icons.Default.Edit)
                 DailyTaskItemSync("Thiền 10 phút", "21:30", "Chưa làm", OrangeStatus, Icons.Default.NightsStay)
+
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // --- CỐ ĐỊNH PHẦN DƯỚI (BANNER & FOOTER) ---
+            Column(modifier = Modifier.background(PurpleBg)) {
+                CalendarModernBanner()
+                SquaredBottomNav(navController = navController)
             }
         }
+    }
+}
 
-        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-            SquaredBottomNav(navController = navController)
+// --- CÁC HÀM STATS STYLE MỚI (NHỎ & HIỆN ĐẠI) ---
+
+// --- STATS CẢI TIẾN: LÊN MÀU SẮC RỰC RỠ HƠN ---
+
+@Composable
+fun CompactStatCard(value: String, label: String, icon: ImageVector, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Icon dùng màu chủ đạo, có bóng đổ nhẹ
+        Icon(
+            icon,
+            null,
+            tint = color,
+            modifier = Modifier
+                .size(30.dp)
+                .graphicsLayer(alpha = 0.9f)
+        )
+        Spacer(Modifier.width(10.dp))
+        Column {
+            // Số tổng công việc lên màu DeepPurple cực đậm và dày
+            Text(
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                color = DeepPurple, // Màu tím đặc trưng của app
+                lineHeight = 20.sp
+            )
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = Color.Gray.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.2.sp
+            )
         }
     }
 }
 
-// --- CÁC HÀM BỔ TRỢ (HELPER FUNCTIONS) ---
-
 @Composable
-fun StatItemHorizontal(value: String, desc: String, icon: ImageVector, color: Color) {
+fun CompactProgressCard(percentage: Float, label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(48.dp).background(color.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            // Con số % dùng màu xanh Teal/Mint sáng cho nổi bật
+            Text(
+                text = "${(percentage * 100).toInt()}%",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                color = color, // Màu xanh ngọc
+                lineHeight = 20.sp
+            )
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = Color.Gray.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.2.sp
+            )
         }
         Spacer(Modifier.width(12.dp))
-        Column {
-            Text(value, fontSize = 22.sp, fontWeight = FontWeight.Black, color = color)
-            Text(desc, fontSize = 10.sp, color = Color.Gray, lineHeight = 12.sp)
-        }
-    }
-}
-
-@Composable
-fun StatProgressItem(percentage: Float, desc: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Vòng tròn tiến độ có đổ bóng mờ
         Box(contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(progress = 1f, modifier = Modifier.size(48.dp), color = color.copy(alpha = 0.1f), strokeWidth = 4.dp)
-            CircularProgressIndicator(progress = percentage, modifier = Modifier.size(48.dp), color = color, strokeWidth = 4.dp, strokeCap = StrokeCap.Round)
+            CircularProgressIndicator(
+                progress = 1f,
+                modifier = Modifier.size(30.dp),
+                color = color.copy(alpha = 0.15f), // Màu nền mờ
+                strokeWidth = 3.5.dp
+            )
+            CircularProgressIndicator(
+                progress = percentage,
+                modifier = Modifier.size(30.dp),
+                color = color,
+                strokeWidth = 3.5.dp,
+                strokeCap = StrokeCap.Round
+            )
         }
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text("${(percentage * 100).toInt()}%", fontSize = 22.sp, fontWeight = FontWeight.Black, color = color)
-            Text(desc, fontSize = 10.sp, color = Color.Gray, lineHeight = 12.sp)
+    }
+}
+
+// --- CÁC HÀM CÒN LẠI ---
+
+@Composable
+fun CalendarModernBanner() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(18.dp))
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.banner),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Column {
+                Text("Lập kế hoạch thông minh", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("Sắp xếp thời gian, gặt hái thành công ✨", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+            }
         }
     }
 }
@@ -145,7 +236,7 @@ fun StatProgressItem(percentage: Float, desc: String, color: Color) {
 @Composable
 fun MonthSelectorMini() {
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Tháng 5, 2024", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = DeepPurple)
+        Text("Tháng 5, 2026", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = DeepPurple)
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = {}, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.ChevronLeft, null, tint = DeepPurple) }
             Text("Hôm nay", color = DeepPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp))
@@ -172,7 +263,11 @@ fun CalendarGridMini(widthClass: WindowWidthSizeClass) {
                     val dayNum = i * 7 + j - 2
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         if (dayNum in 1..31) {
-                            Surface(modifier = Modifier.size(dayCircleSize), shape = CircleShape, color = if (dayNum == 15) DeepPurple else Color.Transparent) {
+                            Surface(
+                                modifier = Modifier.size(dayCircleSize),
+                                shape = CircleShape,
+                                color = if (dayNum == 15) DeepPurple else Color.Transparent
+                            ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text("$dayNum", color = if (dayNum == 15) Color.White else Color.Black, fontSize = 11.sp)
                                 }
@@ -187,7 +282,12 @@ fun CalendarGridMini(widthClass: WindowWidthSizeClass) {
 
 @Composable
 fun DailyTaskItemSync(title: String, time: String, status: String, statusColor: Color, icon: ImageVector) {
-    Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), shape = RoundedCornerShape(16.dp), color = Color.White, shadowElevation = 0.5.dp) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 0.5.dp
+    ) {
         Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(36.dp).background(PurpleBg, CircleShape), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = DeepPurple, modifier = Modifier.size(18.dp))

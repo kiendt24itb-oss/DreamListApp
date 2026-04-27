@@ -14,9 +14,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.todolistapp.ui.CalendarScreen
+import com.example.todolistapp.ui.ExploreScreen
 import com.example.todolistapp.ui.Home
 import com.example.todolistapp.ui.Login
 import com.example.todolistapp.ui.Register
+import com.example.todolistapp.ui.SettingsScreen
 import com.example.todolistapp.ui.SplashScreenContent
 
 // Khai báo kho chứa kích thước màn hình
@@ -61,6 +63,18 @@ class MainActivity : ComponentActivity() {
 
                             composable("CalendarScreen") {
                                 CalendarScreen(navController)
+                            }
+
+                           /* composable("AddDreamScreen") {
+                                AddDreamScreen(navController)
+                            }*/
+
+                            composable("ExploreScreen") {
+                                ExploreScreen(navController)
+                            }
+
+                            composable("SettingsScreen") {
+                                SettingsScreen(navController)
                             }
                         }
                     }

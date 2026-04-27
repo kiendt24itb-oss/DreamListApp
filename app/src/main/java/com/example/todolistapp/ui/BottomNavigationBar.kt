@@ -68,9 +68,9 @@ fun SquaredBottomNav(navController: NavHostController) {
                 // Triple(Tiêu đề, Icon, Màu sắc, Route thực tế)
                 Triple("Trang chủ", Icons.Default.Home, DeepPurple to "Home"),
                 Triple("Lịch", Icons.Default.CalendarMonth, OrangeStatus to "CalendarScreen"),
-                Triple("", Icons.Default.Add, Color.Transparent to ""),
-                Triple("Khám phá", Icons.Default.Explore, BlueStatus to "Explore"),
-                Triple("Cài đặt", Icons.Default.Settings, GreenStatus to "Settings")
+                Triple("", Icons.Default.Add, Color.Transparent to "AddDreamScreen"),
+                Triple("Khám phá", Icons.Default.Explore, BlueStatus to "ExploreScreen"),
+                Triple("Cài đặt", Icons.Default.Settings, GreenStatus to "SettingsScreen")
             )
 
             items.forEachIndexed { i, item ->
@@ -120,7 +120,10 @@ fun SquaredBottomNav(navController: NavHostController) {
 
         // Nút FAB
         FloatingActionButton(
-            onClick = { /* Action */ },
+            onClick = {
+                // LỆNH ĐIỀU HƯỚNG Ở ĐÂY
+                navController.navigate("AddDreamScreen")
+            },
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .offset(y = (-15).dp)
@@ -132,5 +135,6 @@ fun SquaredBottomNav(navController: NavHostController) {
         ) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(35.dp))
         }
+
     }
 }
