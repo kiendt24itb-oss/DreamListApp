@@ -3,64 +3,48 @@ package com.example.todolistapp.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
+import com.example.todolistapp.viewmodel.AuthViewModel
 
 @Composable
-fun Login(navController: NavHostController) { // Đã đồng bộ tham số
-    // Lấy size từ kho chứa toàn cục
-    val windowSize = LocalWindowSizeClass.current
-    val widthClass = windowSize.widthSizeClass
+fun Login(navController: NavHostController) {
+
+    // ===== VIEWMODEL =====
+    val viewModel: AuthViewModel = viewModel()
+
+    // ===== STATE =====
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    val loginResult by viewModel.loginResult.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val loading by viewModel.loading.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Hình nền - GIỮ NGUYÊN
+
+        // ===== BACKGROUND =====
         Image(
             painter = painterResource(id = R.drawable.b_g),
             contentDescription = null,
@@ -74,71 +58,101 @@ fun Login(navController: NavHostController) { // Đã đồng bộ tham số
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.weight(0.10f))
 
-            // 2. Logo -> TỰ ĐỘNG THÍCH ỨNG THEO MÀN HÌNH
+            Spacer(modifier = Modifier.weight(0.1f))
+
+            // ===== LOGO =====
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = null,
-                modifier = Modifier.size(
-                    if (widthClass == WindowWidthSizeClass.Expanded) 200.dp else 160.dp
-                )
+                modifier = Modifier.size(160.dp)
             )
 
             Text(
                 text = "dream list",
                 fontSize = 46.sp,
                 color = Color(0xFF4A3DA1),
-                fontFamily = FontFamily.Serif,
-                modifier = Modifier.offset(y = (-8).dp)
+                fontFamily = FontFamily.Serif
             )
+
             Text(
-                text = "Biến ước mơ của bạn\nthành những kế hoạch mỗi ngày ✨",
+                text = "Biến ước mơ thành kế hoạch ✨",
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp,
-                color = Color(0xFF5E549E).copy(alpha = 0.7f),
-                lineHeight = 20.sp
+                fontSize = 18.sp, // Tăng kích thước (từ 14 lên 18)
+                color = Color.White.copy(alpha = 0.9f), // Màu trắng hơi trong suốt tí cho sang
+                fontWeight = FontWeight.Medium
             )
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // 3. Input Fields - GIỮ NGUYÊN
-            CustomTextField(value = "", onValueChange = {}, label = "Email", icon = Icons.Default.Email)
-            Spacer(modifier = Modifier.height(16.dp))
-            CustomTextField(value = "", onValueChange = {}, label = "Mật khẩu", icon = Icons.Default.Lock, isPassword = true)
-
-            Text(
-                text = "Quên mật khẩu?",
-                modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
-                color = Color(0xFF5E549E),
-                fontSize = 13.sp
+            // ===== EMAIL =====
+            CustomTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Email",
+                icon = Icons.Default.Email
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Button - GIỮ NGUYÊN LOGIC ĐIỀU HƯỚNG
-            GradientButton(text = "Đăng nhập") {
-                navController.navigate("Home")
+            // ===== PASSWORD =====
+            CustomTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = "Mật khẩu",
+                icon = Icons.Default.Lock,
+                isPassword = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ===== ERROR =====
+            error?.let {
+                Text(text = it, color = Color.Red)
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ===== BUTTON LOGIN =====
+            GradientButton(text = if (loading) "Đang đăng nhập..." else "Đăng nhập") {
+                if (email.isNotEmpty() && password.isNotEmpty()) {
+                    viewModel.login(email, password)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ===== LOGIN RESULT =====
+            loginResult?.let { res ->
+                if (res.success) {
+
+                    // 👉 NAV HOME
+                    navController.navigate("Home") {
+                        popUpTo("Login") { inclusive = true }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.weight(0.1f))
 
-            // 5. Chuyển sang Đăng ký - GIỮ NGUYÊN
+            // ===== REGISTER =====
             Row {
-                Text("Chưa có tài khoản? ", color = Color.Gray)
+                Text("Chưa có tài khoản? ")
                 Text(
                     text = "Đăng ký",
                     color = Color(0xFF6B62D9),
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { navController.navigate("Register") }
+                    modifier = Modifier.clickable {
+                        navController.navigate("Register")
+                    }
                 )
             }
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
-// --- CÁC COMPONENT PHỤ GIỮ NGUYÊN HOÀN TOÀN ---
 @Composable
 fun CustomTextField(
     value: String,
@@ -148,6 +162,8 @@ fun CustomTextField(
     isPassword: Boolean = false
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
+    val mainPurple = Color(0xFF6B62D9) // Màu tím layout của bạn
+
     TextField(
         value = value,
         onValueChange = onValueChange,
@@ -155,13 +171,25 @@ fun CustomTextField(
             .fillMaxWidth()
             .height(56.dp)
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        placeholder = { Text(text = label, color = Color.Gray.copy(alpha = 0.6f)) },
-        leadingIcon = { Icon(imageVector = icon, contentDescription = null, tint = Color(0xFF9D89F3)) },
+        placeholder = { Text(label, color = Color.Gray) },
+        // Đổi màu Icon bên trái (Email/Lock)
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = mainPurple // Lên màu tím
+            )
+        },
         trailingIcon = {
             if (isPassword) {
-                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = null, tint = Color.LightGray)
+                    Icon(
+                        imageVector = if (passwordVisible)
+                            Icons.Default.Visibility
+                        else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = mainPurple // Icon con mắt cũng màu tím luôn
+                    )
                 }
             }
         },
@@ -169,33 +197,43 @@ fun CustomTextField(
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
             focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
+            unfocusedIndicatorColor = Color.Transparent,
+            focusedTextColor = Color.Black
         ),
-        shape = RoundedCornerShape(16.dp),
         singleLine = true,
-        visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None
+        visualTransformation =
+            if (isPassword && !passwordVisible)
+                PasswordVisualTransformation()
+            else VisualTransformation.None,
+        shape = RoundedCornerShape(16.dp)
     )
 }
 
 @Composable
 fun GradientButton(text: String, onClick: () -> Unit) {
+
     val gradient = Brush.linearGradient(
         colors = listOf(Color(0xFF9D89F3), Color(0xFF6B62D9)),
         start = Offset(0f, 0f),
         end = Offset(1000f, 1000f)
     )
+
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
         contentPadding = PaddingValues(),
         shape = RoundedCornerShape(28.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().background(gradient),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradient),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = text + " ✨", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(text = text, color = Color.White)
         }
     }
 }
