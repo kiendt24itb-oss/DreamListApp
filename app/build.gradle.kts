@@ -62,5 +62,8 @@ dependencies {
 
         // Icons mở rộng
         implementation("androidx.compose.material:material-icons-extended:1.6.7")
+
+        //ảnh
+        implementation("io.coil-kt:coil-compose:2.4.0")
     }
 }

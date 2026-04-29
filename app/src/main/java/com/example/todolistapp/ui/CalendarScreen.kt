@@ -33,13 +33,20 @@ fun CalendarScreen(navController: NavHostController) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
+    // --- CẤU HÌNH THÔNG SỐ ADAPTIVE ---
+    val horizontalPadding = if (widthClass == WindowWidthSizeClass.Compact) 20.dp else 45.dp
+    val headerFontSize = if (widthClass == WindowWidthSizeClass.Compact) 26.sp else 36.sp
+    val sectionTitleSize = if (widthClass == WindowWidthSizeClass.Compact) 17.sp else 22.sp
+
     Box(modifier = Modifier.fillMaxSize().background(PurpleBg)) {
-        // 1. Ảnh nền & Gradient mờ ảo
+        // 1. Ảnh nền & Gradient
         Image(
             painter = painterResource(id = R.drawable.bg_h),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.4f)
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(if (widthClass == WindowWidthSizeClass.Compact) 0.4f else 0.5f)
         )
         Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f).background(
             Brush.verticalGradient(
@@ -49,54 +56,45 @@ fun CalendarScreen(navController: NavHostController) {
         ))
 
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
-            Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 10.dp).statusBarsPadding()) {
-                Text("Lịch ước mơ ✨", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            // Header thích ứng
+            Column(
+                modifier = Modifier
+                    .padding(start = horizontalPadding, end = horizontalPadding, top = 20.dp, bottom = 10.dp)
+                    .statusBarsPadding()
+            ) {
+                Text("Lịch ước mơ ✨", fontSize = headerFontSize, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
-            // --- CỐ ĐỊNH PHẦN TRÊN ---
+            // --- PHẦN TRÊN CỐ ĐỊNH (LỊCH & STATS) ---
             Column {
-                // Khối Lịch (Giữ Surface để tách biệt nền ảnh)
                 Surface(
-                    modifier = Modifier.padding(horizontal = 20.dp).shadow(8.dp, RoundedCornerShape(24.dp)),
+                    modifier = Modifier
+                        .padding(horizontal = horizontalPadding)
+                        .shadow(8.dp, RoundedCornerShape(24.dp)),
                     color = Color.White
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                        MonthSelectorMini()
-                        WeekHeaderMini()
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        MonthSelectorMini(widthClass)
+                        WeekHeaderMini(widthClass)
                         CalendarGridMini(widthClass)
                     }
                 }
 
-                // KHỐI STATS STYLE MỚI: NHỎ, GỌN, SANG
+                // Stats Row thích ứng
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 28.dp, vertical = 14.dp), // Tăng lề ngang để icon dịch trái hơn
+                        .padding(horizontal = horizontalPadding + 8.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Thẻ 1: Tổng công việc
-                    CompactStatCard(
-                        value = "28",
-                        label = "Tổng công việc",
-                        icon = Icons.Default.MenuBook,
-                        color = DeepPurple
-                    )
-
-                    // Vạch chia mảnh mai
-                    Box(modifier = Modifier.width(1.dp).height(22.dp).background(Color.LightGray.copy(alpha = 0.5f)))
-
-                    // Thẻ 2: Tiến độ
-                    CompactProgressCard(
-                        percentage = 0.67f,
-                        label = "Tiến độ",
-                        color = Color(0xFF03DAC6)
-                    )
+                    CompactStatCard("28", "Tổng công việc", Icons.Default.MenuBook, DeepPurple, widthClass)
+                    Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.LightGray.copy(alpha = 0.5f)))
+                    CompactProgressCard(0.67f, "Tiến độ", Color(0xFF03DAC6), widthClass)
                 }
             }
 
-            // --- VÙNG CUỘN (DANH SÁCH TASK) ---
+            // --- VÙNG CUỘN DANH SÁCH TASK ---
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -105,160 +103,156 @@ fun CalendarScreen(navController: NavHostController) {
                 Text(
                     "Kế hoạch ngày 15/05",
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 17.sp,
+                    fontSize = sectionTitleSize,
                     color = DeepPurple,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = horizontalPadding, vertical = 8.dp)
                 )
 
-                DailyTaskItemSync("Đọc 30 trang sách", "07:00", "Hoàn thành", GreenStatus, Icons.Default.MenuBook)
-                DailyTaskItemSync("Tập luyện 30 phút", "18:00", "Hoàn thành", GreenStatus, Icons.Default.FitnessCenter)
-                DailyTaskItemSync("Hoàn thành bài luận", "19:30", "Đang làm", BlueStatus, Icons.Default.Edit)
-                DailyTaskItemSync("Thiền 10 phút", "21:30", "Chưa làm", OrangeStatus, Icons.Default.NightsStay)
+                // Task Items
+                DailyTaskItemSync("Đọc 30 trang sách", "07:00", "Hoàn thành", GreenStatus, Icons.Default.MenuBook, horizontalPadding)
+                DailyTaskItemSync("Tập luyện 30 phút", "18:00", "Hoàn thành", GreenStatus, Icons.Default.FitnessCenter, horizontalPadding)
+                DailyTaskItemSync("Hoàn thành bài luận", "19:30", "Đang làm", BlueStatus, Icons.Default.Edit, horizontalPadding)
+                DailyTaskItemSync("Thiền 10 phút", "21:30", "Chưa làm", OrangeStatus, Icons.Default.NightsStay, horizontalPadding)
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // --- CỐ ĐỊNH PHẦN DƯỚI (BANNER & FOOTER) ---
+            // --- PHẦN DƯỚI CỐ ĐỊNH (BANNER & NAV) ---
             Column(modifier = Modifier.background(PurpleBg)) {
-                CalendarModernBanner()
+                CalendarModernBanner(widthClass, horizontalPadding)
                 SquaredBottomNav(navController = navController)
             }
         }
     }
 }
 
-// --- CÁC HÀM STATS STYLE MỚI (NHỎ & HIỆN ĐẠI) ---
-
-// --- STATS CẢI TIẾN: LÊN MÀU SẮC RỰC RỠ HƠN ---
+// --- CÁC COMPONENT CON ĐÃ ĐƯỢC TỐI ƯU WINDOWSIZE ---
 
 @Composable
-fun CompactStatCard(value: String, label: String, icon: ImageVector, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Icon dùng màu chủ đạo, có bóng đổ nhẹ
-        Icon(
-            icon,
-            null,
-            tint = color,
-            modifier = Modifier
-                .size(30.dp)
-                .graphicsLayer(alpha = 0.9f)
-        )
-        Spacer(Modifier.width(10.dp))
-        Column {
-            // Số tổng công việc lên màu DeepPurple cực đậm và dày
-            Text(
-                text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                color = DeepPurple, // Màu tím đặc trưng của app
-                lineHeight = 20.sp
-            )
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                color = Color.Gray.copy(alpha = 0.8f),
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.2.sp
-            )
-        }
+fun CalendarModernBanner(widthClass: WindowWidthSizeClass, hPadding: androidx.compose.ui.unit.Dp) {
+    val bannerHeight = when (widthClass) {
+        WindowWidthSizeClass.Compact -> 85.dp
+        WindowWidthSizeClass.Medium -> 105.dp
+        else -> 125.dp
     }
-}
 
-@Composable
-fun CompactProgressCard(percentage: Float, label: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(horizontalAlignment = Alignment.End) {
-            // Con số % dùng màu xanh Teal/Mint sáng cho nổi bật
-            Text(
-                text = "${(percentage * 100).toInt()}%",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                color = color, // Màu xanh ngọc
-                lineHeight = 20.sp
-            )
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                color = Color.Gray.copy(alpha = 0.8f),
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.2.sp
-            )
-        }
-        Spacer(Modifier.width(12.dp))
-        // Vòng tròn tiến độ có đổ bóng mờ
-        Box(contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                progress = 1f,
-                modifier = Modifier.size(30.dp),
-                color = color.copy(alpha = 0.15f), // Màu nền mờ
-                strokeWidth = 3.5.dp
-            )
-            CircularProgressIndicator(
-                progress = percentage,
-                modifier = Modifier.size(30.dp),
-                color = color,
-                strokeWidth = 3.5.dp,
-                strokeCap = StrokeCap.Round
-            )
-        }
-    }
-}
-
-// --- CÁC HÀM CÒN LẠI ---
-
-@Composable
-fun CalendarModernBanner() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .height(bannerHeight)
+            .padding(horizontal = hPadding, vertical = 6.dp)
+            .clip(RoundedCornerShape(24.dp))
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.banner),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        Box(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
+        Image(painter = painterResource(id = R.drawable.banner), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        Box(modifier = Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent))))
+        Box(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.CenterStart) {
             Column {
-                Text("Lập kế hoạch thông minh", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("Sắp xếp thời gian, gặt hái thành công ✨", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                Text(
+                    "Lập kế hoạch thông minh",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (widthClass == WindowWidthSizeClass.Compact) 15.sp else 20.sp
+                )
+                Text(
+                    "Sắp xếp thời gian, gặt hái thành công ✨",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = if (widthClass == WindowWidthSizeClass.Compact) 11.sp else 14.sp
+                )
             }
         }
     }
 }
 
 @Composable
-fun MonthSelectorMini() {
-    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Tháng 5, 2026", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = DeepPurple)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {}, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.ChevronLeft, null, tint = DeepPurple) }
-            Text("Hôm nay", color = DeepPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp))
-            IconButton(onClick = {}, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.ChevronRight, null, tint = DeepPurple) }
+fun CompactStatCard(value: String, label: String, icon: ImageVector, color: Color, widthClass: WindowWidthSizeClass) {
+    val iconSize = if (widthClass == WindowWidthSizeClass.Compact) 30.dp else 38.dp
+    val valSize = if (widthClass == WindowWidthSizeClass.Compact) 20.sp else 26.sp
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(iconSize).graphicsLayer(alpha = 0.9f))
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(text = value, fontSize = valSize, fontWeight = FontWeight.Black, color = DeepPurple, lineHeight = valSize)
+            Text(text = label, fontSize = 11.sp, color = Color.Gray.copy(alpha = 0.8f), fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun WeekHeaderMini() {
+fun CompactProgressCard(percentage: Float, label: String, color: Color, widthClass: WindowWidthSizeClass) {
+    val indicatorSize = if (widthClass == WindowWidthSizeClass.Compact) 30.dp else 38.dp
+    val valSize = if (widthClass == WindowWidthSizeClass.Compact) 20.sp else 26.sp
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(horizontalAlignment = Alignment.End) {
+            Text(text = "${(percentage * 100).toInt()}%", fontSize = valSize, fontWeight = FontWeight.Black, color = color, lineHeight = valSize)
+            Text(text = label, fontSize = 11.sp, color = Color.Gray.copy(alpha = 0.8f), fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(12.dp))
+        Box(contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(progress = 1f, modifier = Modifier.size(indicatorSize), color = color.copy(alpha = 0.15f), strokeWidth = 3.5.dp)
+            CircularProgressIndicator(progress = percentage, modifier = Modifier.size(indicatorSize), color = color, strokeWidth = 3.5.dp, strokeCap = StrokeCap.Round)
+        }
+    }
+}
+
+@Composable
+fun DailyTaskItemSync(title: String, time: String, status: String, statusColor: Color, icon: ImageVector, hPadding: androidx.compose.ui.unit.Dp) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 5.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        shadowElevation = 0.8.dp
+    ) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(42.dp).background(PurpleBg, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = DeepPurple, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(status, color = statusColor, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(" • ", color = Color.LightGray)
+                    Icon(Icons.Default.AccessTime, null, tint = SoftPurple, modifier = Modifier.size(13.dp))
+                    Text(" $time", color = SoftPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+fun MonthSelectorMini(widthClass: WindowWidthSizeClass) {
+    val fontSize = if (widthClass == WindowWidthSizeClass.Compact) 16.sp else 20.sp
+    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+        Text("Tháng 5, 2026", fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = DeepPurple)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {}, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.ChevronLeft, null, tint = DeepPurple) }
+            Text("Hôm nay", color = DeepPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp))
+            IconButton(onClick = {}, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.ChevronRight, null, tint = DeepPurple) }
+        }
+    }
+}
+
+@Composable
+fun WeekHeaderMini(widthClass: WindowWidthSizeClass) {
     val days = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        days.forEach { Text(it, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp, color = Color.Gray) }
+    val fontSize = if (widthClass == WindowWidthSizeClass.Compact) 11.sp else 13.sp
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        days.forEach { Text(it, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = fontSize, color = Color.Gray, fontWeight = FontWeight.Medium) }
     }
 }
 
 @Composable
 fun CalendarGridMini(widthClass: WindowWidthSizeClass) {
-    val dayCircleSize = if (widthClass == WindowWidthSizeClass.Expanded) 36.dp else 26.dp
+    val dayCircleSize = if (widthClass == WindowWidthSizeClass.Expanded) 40.dp else 30.dp
+    val fontSize = if (widthClass == WindowWidthSizeClass.Compact) 12.sp else 14.sp
+
     Column {
         for (i in 0 until 5) {
-            Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                 for (j in 0 until 7) {
                     val dayNum = i * 7 + j - 2
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -269,37 +263,11 @@ fun CalendarGridMini(widthClass: WindowWidthSizeClass) {
                                 color = if (dayNum == 15) DeepPurple else Color.Transparent
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("$dayNum", color = if (dayNum == 15) Color.White else Color.Black, fontSize = 11.sp)
+                                    Text("$dayNum", color = if (dayNum == 15) Color.White else Color.Black, fontSize = fontSize, fontWeight = if(dayNum == 15) FontWeight.Bold else FontWeight.Normal)
                                 }
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DailyTaskItemSync(title: String, time: String, status: String, statusColor: Color, icon: ImageVector) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 0.5.dp
-    ) {
-        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(36.dp).background(PurpleBg, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = DeepPurple, modifier = Modifier.size(18.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(status, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(" • ", color = Color.LightGray)
-                    Icon(Icons.Default.AccessTime, null, tint = SoftPurple, modifier = Modifier.size(12.dp))
-                    Text(" $time", color = SoftPurple, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

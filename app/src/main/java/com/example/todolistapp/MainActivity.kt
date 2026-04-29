@@ -13,13 +13,17 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.todolistapp.ui.AboutAppScreen
+import com.example.todolistapp.ui.AddDreamScreen
 import com.example.todolistapp.ui.CalendarScreen
 import com.example.todolistapp.ui.ExploreScreen
 import com.example.todolistapp.ui.Home
 import com.example.todolistapp.ui.Login
+import com.example.todolistapp.ui.ProfileScreen
 import com.example.todolistapp.ui.Register
 import com.example.todolistapp.ui.SettingsScreen
 import com.example.todolistapp.ui.SplashScreenContent
+import com.example.todolistapp.ui.TermsOfServiceScreen
 
 // Khai báo kho chứa kích thước màn hình
 val LocalWindowSizeClass = staticCompositionLocalOf<WindowSizeClass> {
@@ -65,9 +69,9 @@ class MainActivity : ComponentActivity() {
                                 CalendarScreen(navController)
                             }
 
-                           /* composable("AddDreamScreen") {
+                            composable("AddDreamScreen") {
                                 AddDreamScreen(navController)
-                            }*/
+                            }
 
                             composable("ExploreScreen") {
                                 ExploreScreen(navController)
@@ -75,6 +79,18 @@ class MainActivity : ComponentActivity() {
 
                             composable("SettingsScreen") {
                                 SettingsScreen(navController)
+                            }
+
+                            composable("ProfileScreen") {
+                                ProfileScreen(navController)
+                            }
+
+                            composable("TermsOfServiceScreen") {
+                                TermsOfServiceScreen(navController)
+                            }
+
+                            composable("AboutAppScreen") {
+                                AboutAppScreen(navController)
                             }
                         }
                     }

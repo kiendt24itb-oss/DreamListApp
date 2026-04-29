@@ -1,42 +1,14 @@
 package com.example.todolistapp.ui
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.AllInclusive
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.EventNote
-import androidx.compose.material.icons.filled.HourglassEmpty
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.UnfoldMore
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,24 +25,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
 
-val PurpleBg = Color(0xFFF3F2FF)
-val DeepPurple = Color(0xFF6A5AE0)
-val SoftPurple = Color(0xFF9D89F3)
-val OrangeStatus = Color(0xFFFF9800)
-val GreenStatus = Color(0xFF4CAF50)
-val BlueStatus = Color(0xFF2196F3)
-
 @Composable
-fun Home(navController: NavHostController) { // Sửa 1: Đồng bộ tham số
-    // Sửa 2: Lấy windowSize từ Local Provider
+fun Home(navController: NavHostController, userAvatarUri: android.net.Uri? = null) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
+    // --- BIẾN ĐIỀU CHỈNH THÍCH ỨNG ---
+    val hPadding = if (widthClass == WindowWidthSizeClass.Compact) 24.dp else 40.dp
+    val headerFontSize = if (widthClass == WindowWidthSizeClass.Compact) 26.sp else 34.sp
+    val upcomingHeight = if (widthClass == WindowWidthSizeClass.Expanded) 180.dp else 145.dp
+
     Box(modifier = Modifier.fillMaxSize().background(PurpleBg)) {
-        Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.55f)) {
+
+        // 1. LỚP NỀN (Background Image với Gradient che mờ)
+        Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(if (widthClass == WindowWidthSizeClass.Compact) 0.55f else 0.45f)) {
             Image(
                 painter = painterResource(id = R.drawable.bg_h),
                 contentDescription = null,
@@ -85,12 +57,16 @@ fun Home(navController: NavHostController) { // Sửa 1: Đồng bộ tham số
             ))
         }
 
+        // 2. NỘI DUNG CHÍNH TRÊN MÀN HÌNH
         Column(modifier = Modifier.fillMaxSize()) {
-            HeaderSection()
 
+            // Header: Ảnh đại diện & Lời chào
+            HeaderSection(hPadding, headerFontSize, userAvatarUri)
+
+            // Tiêu đề: Sắp đến hạn
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = hPadding, vertical = 8.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -99,34 +75,28 @@ fun Home(navController: NavHostController) { // Sửa 1: Đồng bộ tham số
                         .border(2.dp, Color.White.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.HourglassEmpty,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(Icons.Default.HourglassEmpty, null, tint = Color.White, modifier = Modifier.size(16.dp))
                 }
                 Spacer(Modifier.width(12.dp))
                 Text(
                     "Sắp đến hạn",
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
-                    fontSize = 20.sp,
-                    style = TextStyle(
-                        shadow = Shadow(Color.Black.copy(0.4f), blurRadius = 8f)
-                    )
+                    fontSize = if (widthClass == WindowWidthSizeClass.Compact) 20.sp else 24.sp,
+                    style = TextStyle(shadow = Shadow(Color.Black.copy(0.4f), blurRadius = 8f))
                 )
             }
 
+            // Danh sách Card Sắp đến hạn (LazyRow)
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(horizontal = hPadding, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                // Sửa 3: Thích ứng chiều cao card nếu là màn hình lớn
-                modifier = Modifier.height(if (widthClass == WindowWidthSizeClass.Expanded) 180.dp else 145.dp)
+                modifier = Modifier.height(upcomingHeight)
             ) {
                 items(5) { MinimalUpcomingCard(widthClass) }
             }
 
+            // Thân bài: Filter & Danh sách Task
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,10 +104,11 @@ fun Home(navController: NavHostController) { // Sửa 1: Đồng bộ tham số
                     .background(PurpleBg)
                     .padding(top = 12.dp)
             ) {
-                ProfessionalFilterSection()
-                SectionTitleWithSort("Công việc")
+                ProfessionalFilterSection(hPadding)
+                SectionTitleWithSort("Công việc", hPadding)
             }
 
+            // Danh sách các Task (Có thể cuộn)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,22 +116,73 @@ fun Home(navController: NavHostController) { // Sửa 1: Đồng bộ tham số
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 100.dp)
             ) {
-                repeat(10) { index -> FinalTaskItem(index) }
+                repeat(10) { index -> FinalTaskItem(index, hPadding) }
             }
         }
 
+        // Bottom Navigation Bar
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             SquaredBottomNav(navController = navController)
         }
     }
 }
 
+// --- CÁC COMPONENT CON (Helper Composables) ---
+
+@Composable
+fun HeaderSection(hPadding: androidx.compose.ui.unit.Dp, fontSize: androidx.compose.ui.unit.TextUnit, avatarUri: android.net.Uri?) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = hPadding, vertical = 24.dp)
+            .statusBarsPadding(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Box chứa Ảnh: Tự động đổi giữa Logo và Ảnh người dùng
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.2f))
+                .border(2.dp, Color.White, CircleShape)
+        ) {
+            if (avatarUri != null) {
+                AsyncImage(
+                    model = avatarUri,
+                    contentDescription = "User Avatar",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
+
+        Spacer(Modifier.width(16.dp))
+
+        Column {
+            Text("Xin chào,", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+            Text(
+                "Kiên ✨",
+                fontSize = fontSize,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                style = TextStyle(shadow = Shadow(Color.Black.copy(0.3f), blurRadius = 5f))
+            )
+        }
+    }
+}
+
 @Composable
 fun MinimalUpcomingCard(widthClass: WindowWidthSizeClass) {
+    val cardWidth = if (widthClass == WindowWidthSizeClass.Expanded) 220.dp else 160.dp
     Box(
         modifier = Modifier
-            // Sửa 4: Thích ứng chiều rộng card
-            .width(if (widthClass == WindowWidthSizeClass.Expanded) 220.dp else 160.dp)
+            .width(cardWidth)
             .fillMaxHeight()
             .clip(RoundedCornerShape(24.dp))
             .background(Color.Black.copy(alpha = 0.42f))
@@ -170,10 +192,7 @@ fun MinimalUpcomingCard(widthClass: WindowWidthSizeClass) {
             modifier = Modifier.padding(16.dp).fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Surface(
-                color = SoftPurple.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(8.dp)
-            ) {
+            Surface(color = Color(0xFFE0B0FF).copy(alpha = 0.3f), shape = RoundedCornerShape(8.dp)) {
                 Text(
                     "SẮP TỚI",
                     fontSize = 11.sp,
@@ -183,66 +202,33 @@ fun MinimalUpcomingCard(widthClass: WindowWidthSizeClass) {
                     letterSpacing = 1.sp
                 )
             }
-
             Column {
                 Text(
                     "Đọc sách",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = if (widthClass == WindowWidthSizeClass.Expanded) 22.sp else 18.sp,
-                    color = Color.White,
-                    style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 10f))
+                    color = Color.White
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Event, null, tint = Color(0xFFFFCC80), modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(
-                        "26/04/2026",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("26/04/2026", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
 
-// CÁC HÀM CÒN LẠI (SectionTitleWithSort, FinalTaskItem, HeaderSection, ProfessionalFilterSection)
-// GIỮ NGUYÊN HOÀN TOÀN NHƯ CODE CŨ CỦA BẠN VÌ KHÔNG CẦN CHỈNH SỬA THÊM
 @Composable
-fun SectionTitleWithSort(title: String) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = DeepPurple)
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(Brush.horizontalGradient(listOf(DeepPurple, SoftPurple)))
-                .clickable { }
-                .padding(horizontal = 14.dp, vertical = 7.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Sắp xếp", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(4.dp))
-                Icon(Icons.Default.UnfoldMore, null, tint = Color.White, modifier = Modifier.size(16.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun FinalTaskItem(index: Int) {
+fun FinalTaskItem(index: Int, hPadding: androidx.compose.ui.unit.Dp) {
     val status = when(index % 3) {
-        0 -> Triple("Hoàn thành", GreenStatus, Icons.Default.CheckCircle)
-        1 -> Triple("Đang làm", BlueStatus, Icons.Default.Sync)
-        else -> Triple("Chưa làm", OrangeStatus, Icons.Default.RadioButtonUnchecked)
+        0 -> Triple("Hoàn thành", Color(0xFF4CAF50), Icons.Default.CheckCircle)
+        1 -> Triple("Đang làm", Color(0xFF2196F3), Icons.Default.Sync)
+        else -> Triple("Chưa làm", Color(0xFFFF9800), Icons.Default.RadioButtonUnchecked)
     }
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
         shadowElevation = 1.dp
@@ -255,11 +241,8 @@ fun FinalTaskItem(index: Int) {
                 Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(status.first, color = status.second, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                     Text("  •  ", color = Color.LightGray)
-                    Icon(Icons.Default.EventNote, null, tint = DeepPurple, modifier = Modifier.size(14.dp))
-                    Text(" 26/04/2026", color = DeepPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("  ", color = Color.LightGray)
-                    Icon(Icons.Default.AccessTime, null, tint = SoftPurple, modifier = Modifier.size(14.dp))
-                    Text(" 08:30", color = SoftPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Default.AccessTime, null, tint = Color(0xFF6200EE), modifier = Modifier.size(14.dp))
+                    Text(" 08:30", color = Color(0xFF6200EE), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -267,45 +250,49 @@ fun FinalTaskItem(index: Int) {
 }
 
 @Composable
-fun HeaderSection() {
-    Row(modifier = Modifier.padding(24.dp).statusBarsPadding(), verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = null,
-            modifier = Modifier.size(56.dp).clip(CircleShape).border(2.dp, Color.White, CircleShape)
-        )
-        Spacer(Modifier.width(16.dp))
-        Column {
-            Text("Xin chào,", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
-            Text("Kiên ✨", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+fun SectionTitleWithSort(title: String, hPadding: androidx.compose.ui.unit.Dp) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color(0xFF6200EE))
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Brush.horizontalGradient(listOf(Color(0xFF6200EE), Color(0xFFBB86FC))))
+                .clickable { }
+                .padding(horizontal = 14.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Sắp xếp", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(4.dp))
+            Icon(Icons.Default.UnfoldMore, null, tint = Color.White, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 @Composable
-fun ProfessionalFilterSection() {
+fun ProfessionalFilterSection(hPadding: androidx.compose.ui.unit.Dp) {
     Row(
-        Modifier.padding(horizontal = 20.dp, vertical = 8.dp).horizontalScroll(rememberScrollState()),
+        Modifier.padding(start = hPadding, end = hPadding, top = 8.dp, bottom = 8.dp).horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        val filters = listOf(
-            Triple("Tất cả", Icons.Default.AllInclusive, DeepPurple),
-            Triple("Chưa làm", Icons.Default.RadioButtonUnchecked, OrangeStatus),
-            Triple("Đang làm", Icons.Default.Sync, BlueStatus),
-            Triple("Hoàn thành", Icons.Default.CheckCircle, GreenStatus)
-        )
-        filters.forEachIndexed { i, item ->
+        val filters = listOf("Tất cả", "Chưa làm", "Đang làm", "Hoàn thành")
+        filters.forEachIndexed { i, text ->
             Surface(
-                color = if (i == 0) item.third else Color.White,
+                color = if (i == 0) Color(0xFF6200EE) else Color.White,
                 shape = RoundedCornerShape(14.dp),
                 shadowElevation = 2.dp,
                 modifier = Modifier.clickable { }
             ) {
-                Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(item.second, null, tint = if(i==0) Color.White else item.third, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(item.first, color = if(i==0) Color.White else Color.Black, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
+                Text(
+                    text = text,
+                    color = if (i == 0) Color.White else Color.Black,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                )
             }
         }
     }

@@ -85,9 +85,17 @@ fun SquaredBottomNav(navController: NavHostController) {
                         onClick = {
                             if (currentRoute != targetRoute) {
                                 navController.navigate(targetRoute) {
-                                    // Giúp quản lý stack mượt mà, tránh lặp trang
-                                    popUpTo("Home") { saveState = true }
+                                    // 1. Phải popUpTo về startDestination của TOÀN BỘ Graph
+                                    // để dọn sạch các trang rác như AddDreamScreen đang nằm trên top stack.
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+
+                                    // 2. Tránh tạo ra nhiều instance của cùng một trang khi nhấn tab nhiều lần
                                     launchSingleTop = true
+
+                                    // 3. Quan trọng: Nếu targetRoute là Home hoặc Settings,
+                                    // nó sẽ khôi phục đúng trạng thái gốc của tab đó.
                                     restoreState = true
                                 }
                             }

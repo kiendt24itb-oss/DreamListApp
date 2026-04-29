@@ -1,15 +1,11 @@
 package com.example.todolistapp.ui
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -36,7 +32,11 @@ fun ExploreScreen(navController: NavHostController) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
-    // Dữ liệu mẫu bài viết
+    // --- THÔNG SỐ ADAPTIVE ---
+    val horizontalPadding = if (widthClass == WindowWidthSizeClass.Compact) 24.dp else 45.dp
+    val headerSize = if (widthClass == WindowWidthSizeClass.Compact) 32.sp else 42.sp
+    val subHeaderSize = if (widthClass == WindowWidthSizeClass.Compact) 15.sp else 18.sp
+
     val exploreArticles = listOf(
         ExploreArticle("7 thói quen nhỏ thay đổi cuộc sống", "PHÁT TRIỂN", "8 phút", "4.8", DeepPurple, Icons.Default.AutoStories),
         ExploreArticle("Lập kế hoạch hiệu quả với 3P", "KỸ NĂNG", "6 phút", "4.7", Color(0xFFE84393), Icons.Default.Lightbulb),
@@ -47,8 +47,8 @@ fun ExploreScreen(navController: NavHostController) {
     )
 
     Box(modifier = Modifier.fillMaxSize().background(PurpleBg)) {
-        // 1. LỚP NỀN ẢNH (CỐ ĐỊNH)
-        Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.55f)) {
+        // 1. NỀN ẢNH ADAPTIVE
+        Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(if (widthClass == WindowWidthSizeClass.Compact) 0.55f else 0.65f)) {
             Image(
                 painter = painterResource(id = R.drawable.bg_h),
                 contentDescription = null,
@@ -63,92 +63,92 @@ fun ExploreScreen(navController: NavHostController) {
             ))
         }
 
-        // 2. NỘI DUNG CHÍNH
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // --- CỤM CỐ ĐỊNH PHẦN TRÊN (Header + Row + Tiêu đề Gợi ý) ---
-            Column(modifier = Modifier.background(Color.Transparent)) {
-                // Header
-                Column(modifier = Modifier.statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 10.dp)) {
-                    Text("Khám phá ✨", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                    Text("Ý tưởng và cảm hứng mỗi ngày.", fontSize = 15.sp, color = Color.White.copy(alpha = 0.85f))
-                }
-
-                // Row Chủ đề nổi bật (Style theo trang Home)
-                ExploreSectionHeader("Chủ đề nổi bật", textColor = Color.White)
-                FeaturedTopicsHomeStyle()
-
-                // Tiêu đề Gợi ý cho bạn (Cũng cố định luôn)
-                ExploreSectionHeader("Gợi ý cho bạn", textColor = DeepPurple)
+            // Header
+            Column(modifier = Modifier.statusBarsPadding().padding(start = horizontalPadding, end = horizontalPadding, top = 20.dp, bottom = 10.dp)) {
+                Text("Khám phá ✨", fontSize = headerSize, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                Text("Ý tưởng và cảm hứng mỗi ngày.", fontSize = subHeaderSize, color = Color.White.copy(alpha = 0.85f))
             }
 
-            // --- VÙNG CUỘN (CHỈ CÁC CARD BÀI VIẾT) ---
+            // Chủ đề nổi bật (LazyRow)
+            ExploreSectionHeader("Chủ đề nổi bật", textColor = Color.White, horizontalPadding)
+            FeaturedTopicsHomeStyle(widthClass, horizontalPadding)
+
+            // Tiêu đề Gợi ý
+            ExploreSectionHeader("Gợi ý cho bạn", textColor = DeepPurple, horizontalPadding)
+
+            // VÙNG CUỘN TASK/ARTICLE
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 8.dp)
             ) {
+                // Nếu màn hình lớn, bạn có thể cân nhắc dùng FlowRow hoặc chia Grid,
+                // nhưng ở đây mình tối ưu PremiumCard để giãn ra đẹp hơn.
                 exploreArticles.forEach { article ->
-                    PremiumArticleCard(article)
+                    PremiumArticleCard(article, horizontalPadding, widthClass)
                 }
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // --- CỤM CỐ ĐỊNH PHẦN DƯỚI (Banner + Footer) ---
+            // BOTTOM AREA
             Column(modifier = Modifier.background(PurpleBg)) {
-                ModernThinBanner()
+                ModernThinBanner(widthClass)
                 SquaredBottomNav(navController = navController)
             }
         }
     }
 }
 
-// --- CÁC COMPONENT CON ---
-
 @Composable
-fun ExploreSectionHeader(title: String, textColor: Color) {
+fun ExploreSectionHeader(title: String, textColor: Color, hPadding: androidx.compose.ui.unit.Dp) {
     Text(
         text = title,
         fontWeight = FontWeight.ExtraBold,
         fontSize = 20.sp,
         color = textColor,
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp)
+        modifier = Modifier.padding(start = hPadding, end = hPadding, top = 12.dp, bottom = 8.dp)
     )
 }
 
 @Composable
-fun FeaturedTopicsHomeStyle() {
+fun FeaturedTopicsHomeStyle(widthClass: WindowWidthSizeClass, hPadding: androidx.compose.ui.unit.Dp) {
     val topics = listOf(
         Triple("Phát triển", "128 bài", Color(0xFF6C5CE7)),
         Triple("Kỹ năng", "96 bài", Color(0xFFE84393)),
         Triple("Sáng tạo", "74 bài", Color(0xFF00CEC9))
     )
+
+    val itemWidth = if (widthClass == WindowWidthSizeClass.Compact) 160.dp else 220.dp
+    val itemHeight = if (widthClass == WindowWidthSizeClass.Compact) 75.dp else 90.dp
+
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 24.dp),
+        contentPadding = PaddingValues(horizontal = hPadding),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(topics) { topic ->
             Box(
                 modifier = Modifier
-                    .width(160.dp)
-                    .height(75.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .width(itemWidth)
+                    .height(itemHeight)
+                    .clip(RoundedCornerShape(22.dp))
                     .background(Color.Black.copy(alpha = 0.45f))
-                    .border(1.2.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
-                    .padding(12.dp)
+                    .border(1.2.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
+                    .padding(14.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier.size(36.dp).background(topic.third.copy(alpha = 0.2f), CircleShape),
+                        modifier = Modifier.size(if (widthClass == WindowWidthSizeClass.Compact) 36.dp else 44.dp)
+                            .background(topic.third.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.AutoAwesome, null, tint = topic.third, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.AutoAwesome, null, tint = topic.third, modifier = Modifier.size(20.dp))
                     }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(topic.first, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(topic.second, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                        Text(topic.first, color = Color.White, fontWeight = FontWeight.Bold, fontSize = if (widthClass == WindowWidthSizeClass.Compact) 13.sp else 16.sp)
+                        Text(topic.second, color = Color.White.copy(alpha = 0.6f), fontSize = if (widthClass == WindowWidthSizeClass.Compact) 10.sp else 12.sp)
                     }
                 }
             }
@@ -157,24 +157,27 @@ fun FeaturedTopicsHomeStyle() {
 }
 
 @Composable
-fun PremiumArticleCard(article: ExploreArticle) {
+fun PremiumArticleCard(article: ExploreArticle, hPadding: androidx.compose.ui.unit.Dp, widthClass: WindowWidthSizeClass) {
+    val iconBoxSize = if (widthClass == WindowWidthSizeClass.Compact) 56.dp else 68.dp
+    val titleSize = if (widthClass == WindowWidthSizeClass.Compact) 15.sp else 18.sp
+
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 6.dp),
-        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
+        shape = RoundedCornerShape(24.dp),
         color = Color.White,
-        shadowElevation = 1.dp
+        shadowElevation = 0.8.dp
     ) {
-        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(article.color.copy(alpha = 0.12f)),
+                modifier = Modifier.size(iconBoxSize).clip(RoundedCornerShape(18.dp)).background(article.color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(article.icon, null, tint = article.color, modifier = Modifier.size(24.dp))
+                Icon(article.icon, null, tint = article.color, modifier = Modifier.size(26.dp))
             }
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                Text(article.tag, color = article.color, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Text(article.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1A1C2E), maxLines = 1)
-                Text("${article.time} • ⭐ ${article.rating}", fontSize = 12.sp, color = Color.Gray)
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                Text(article.tag, color = article.color, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                Text(article.title, fontWeight = FontWeight.Bold, fontSize = titleSize, color = Color(0xFF1A1C2E), maxLines = 1)
+                Text("${article.time} • ⭐ ${article.rating}", fontSize = 13.sp, color = Color.Gray)
             }
             Icon(Icons.Default.ArrowForwardIos, null, tint = Color.LightGray, modifier = Modifier.size(14.dp))
         }
@@ -182,13 +185,23 @@ fun PremiumArticleCard(article: ExploreArticle) {
 }
 
 @Composable
-fun ModernThinBanner() {
+fun ModernThinBanner(widthClass: WindowWidthSizeClass) {
+    // --- KHỚP THÔNG SỐ VỚI CALENDARSCREEN ---
+    val hPadding = if (widthClass == WindowWidthSizeClass.Compact) 20.dp else 45.dp
+    val bannerHeight = when (widthClass) {
+        WindowWidthSizeClass.Compact -> 85.dp
+        WindowWidthSizeClass.Medium -> 105.dp
+        else -> 125.dp // Đồng bộ 125.dp thay vì 120.dp
+    }
+    val verticalPadding = 6.dp // Khớp với 6.dp của file kia
+    val cornerRadius = 24.dp   // Khớp với 24.dp của file kia
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(85.dp) // Mỏng lại
-            .padding(start = 16.dp, end = 16.dp, bottom = 10.dp) // Hở lề một ít
-            .clip(RoundedCornerShape(18.dp)) // Bo tròn
+            .height(bannerHeight)
+            .padding(horizontal = hPadding, vertical = verticalPadding)
+            .clip(RoundedCornerShape(cornerRadius))
     ) {
         Image(
             painter = painterResource(id = R.drawable.banner),
@@ -196,20 +209,32 @@ fun ModernThinBanner() {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        Row(
+
+        // Gradient overlay đồng bộ
+        Box(modifier = Modifier.fillMaxSize().background(
+            Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))
+        ))
+
+        Box(
             modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            contentAlignment = Alignment.CenterStart
         ) {
             Column {
-                Text("Kiến thức là sức mạnh", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Mỗi ngày một khám phá mới ✨", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                Text(
+                    "Kiến thức là sức mạnh",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (widthClass == WindowWidthSizeClass.Compact) 15.sp else 20.sp
+                )
+                Text(
+                    "Mỗi ngày một khám phá mới ✨",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = if (widthClass == WindowWidthSizeClass.Compact) 11.sp else 14.sp
+                )
             }
         }
     }
 }
-
-// Data Class và các màu sắc
 data class ExploreArticle(
     val title: String,
     val tag: String,
