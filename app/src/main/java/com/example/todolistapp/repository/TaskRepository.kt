@@ -1,7 +1,7 @@
 package com.example.todolistapp.repository
 
-import com.example.todolistapp.model.Task
 import com.example.todolistapp.model.BaseResponse
+import com.example.todolistapp.model.Task
 import com.example.todolistapp.network.RetrofitClient
 
 class TaskRepository {
@@ -9,7 +9,7 @@ class TaskRepository {
     private val api = RetrofitClient.getClient()
 
     suspend fun getTasks(accountId: Int): List<Task> {
-        return api.getTasks(accountId)
+        return api.getTasks(accountId).tasks
     }
 
     suspend fun addTask(task: Task): BaseResponse {

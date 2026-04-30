@@ -71,7 +71,10 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddDreamScreen(navController: NavHostController) {
+fun AddDreamScreen(
+    navController: NavHostController,
+    accountId: Int
+) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
     val hPadding = if (widthClass == WindowWidthSizeClass.Compact) 20.dp else 45.dp
@@ -233,8 +236,10 @@ fun AddDreamScreen(navController: NavHostController) {
 
                 // Banner coppy style từ Calendar
                 DreamQuoteBannerFixed(widthClass, hPadding)
-                SquaredBottomNav(navController = navController)
-            }
+                SquaredBottomNav(
+                    navController = navController,
+                    accountId = accountId
+                )            }
         }
     }
 }

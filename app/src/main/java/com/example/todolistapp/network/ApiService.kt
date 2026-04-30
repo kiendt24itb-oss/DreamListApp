@@ -6,6 +6,7 @@ import com.example.todolistapp.model.LoginRequest
 import com.example.todolistapp.model.LoginResponse
 import com.example.todolistapp.model.RegisterRequest
 import com.example.todolistapp.model.Task
+import com.example.todolistapp.model.TaskResponse
 import com.example.todolistapp.model.UserProfile
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -20,7 +21,7 @@ interface ApiService {
         @Body request: LoginRequest
     ): LoginResponse
 
-    @POST("auth/register")
+    @POST("auth/register.php")
     suspend fun register(
         @Body request: RegisterRequest
     ): BaseResponse
@@ -30,9 +31,9 @@ interface ApiService {
     @GET("tasks/get_tasks.php")
     suspend fun getTasks(
         @Query("account_id") accountId: Int
-    ): List<Task>
+    ): TaskResponse
 
-    @POST("tasks/add_tasks.php")
+    @POST("tasks/add_task.php")
     suspend fun addTasks(
         @Body task: Task
     ): BaseResponse

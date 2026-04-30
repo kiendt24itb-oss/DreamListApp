@@ -38,7 +38,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.todolistapp.LocalWindowSizeClass
 
 @Composable
-fun SquaredBottomNav(navController: NavHostController) {
+fun SquaredBottomNav(
+    navController: NavHostController,
+    accountId: Int
+) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
@@ -65,12 +68,35 @@ fun SquaredBottomNav(navController: NavHostController) {
         ) {
             // Định nghĩa danh sách các item kèm Route tương ứng
             val items = listOf(
-                // Triple(Tiêu đề, Icon, Màu sắc, Route thực tế)
-                Triple("Trang chủ", Icons.Default.Home, DeepPurple to "Home"),
-                Triple("Lịch", Icons.Default.CalendarMonth, OrangeStatus to "CalendarScreen"),
-                Triple("", Icons.Default.Add, Color.Transparent to "AddDreamScreen"),
-                Triple("Khám phá", Icons.Default.Explore, BlueStatus to "ExploreScreen"),
-                Triple("Cài đặt", Icons.Default.Settings, GreenStatus to "SettingsScreen")
+                Triple(
+                    "Trang chủ",
+                    Icons.Default.Home,
+                    DeepPurple to "Home/$accountId"
+                ),
+
+                Triple(
+                    "Lịch",
+                    Icons.Default.CalendarMonth,
+                    OrangeStatus to "CalendarScreen/$accountId"
+                ),
+
+                Triple(
+                    "",
+                    Icons.Default.Add,
+                    Color.Transparent to "AddDreamScreen/$accountId"
+                ),
+
+                Triple(
+                    "Khám phá",
+                    Icons.Default.Explore,
+                    BlueStatus to "ExploreScreen/$accountId"
+                ),
+
+                Triple(
+                    "Cài đặt",
+                    Icons.Default.Settings,
+                    GreenStatus to "SettingsScreen/$accountId"
+                )
             )
 
             items.forEachIndexed { i, item ->
@@ -78,25 +104,21 @@ fun SquaredBottomNav(navController: NavHostController) {
                     Spacer(Modifier.width(if (widthClass == WindowWidthSizeClass.Expanded) 100.dp else 60.dp))
                 } else {
                     val targetRoute = item.third.second
-                    val isSelected = currentRoute == targetRoute // Kiểm tra chuẩn xác theo route
-
+                    val isSelected =
+                        currentRoute?.startsWith(
+                            targetRoute.substringBefore("/")
+                        ) == true
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
                             if (currentRoute != targetRoute) {
                                 navController.navigate(targetRoute) {
-                                    // 1. Phải popUpTo về startDestination của TOÀN BỘ Graph
-                                    // để dọn sạch các trang rác như AddDreamScreen đang nằm trên top stack.
+
                                     popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
+                                        inclusive = false
                                     }
 
-                                    // 2. Tránh tạo ra nhiều instance của cùng một trang khi nhấn tab nhiều lần
                                     launchSingleTop = true
-
-                                    // 3. Quan trọng: Nếu targetRoute là Home hoặc Settings,
-                                    // nó sẽ khôi phục đúng trạng thái gốc của tab đó.
-                                    restoreState = true
                                 }
                             }
                         },
@@ -129,8 +151,16 @@ fun SquaredBottomNav(navController: NavHostController) {
         // Nút FAB
         FloatingActionButton(
             onClick = {
-                // LỆNH ĐIỀU HƯỚNG Ở ĐÂY
-                navController.navigate("AddDreamScreen")
+
+                if (
+                    currentRoute?.startsWith("AddDreamScreen")
+                    != true
+                ) {
+
+                    navController.navigate(
+                        "AddDreamScreen/$accountId"
+                    )
+                }
             },
             modifier = Modifier
                 .align(Alignment.TopCenter)

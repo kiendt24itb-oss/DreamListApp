@@ -61,24 +61,72 @@ class MainActivity : ComponentActivity() {
                                 Register(navController)
                             }
 
-                            composable("Home") {
-                                Home(navController)
+                            composable("Home/{accountId}") { backStackEntry ->
+
+                                val accountId =
+                                    backStackEntry.arguments
+                                        ?.getString("accountId")
+                                        ?.toIntOrNull() ?: 0
+
+                                Home(
+                                    navController = navController,
+                                    accountId = accountId
+                                )
                             }
 
-                            composable("CalendarScreen") {
-                                CalendarScreen(navController)
+
+                            composable("CalendarScreen/{accountId}") { backStackEntry ->
+
+                                val accountId =
+                                    backStackEntry.arguments
+                                        ?.getString("accountId")
+                                        ?.toIntOrNull() ?: 0
+
+                                CalendarScreen(
+                                    navController = navController,
+                                    accountId = accountId
+                                )
                             }
 
-                            composable("AddDreamScreen") {
-                                AddDreamScreen(navController)
+                            composable(
+                                "AddDreamScreen/{accountId}"
+                            ) { backStackEntry ->
+
+                                val accountId =
+                                    backStackEntry.arguments
+                                        ?.getString("accountId")
+                                        ?.toIntOrNull() ?: 0
+
+                                AddDreamScreen(
+                                    navController = navController,
+                                    accountId = accountId
+                                )
                             }
 
-                            composable("ExploreScreen") {
-                                ExploreScreen(navController)
+                            composable("ExploreScreen/{accountId}") { backStackEntry ->
+
+                                val accountId =
+                                    backStackEntry.arguments
+                                        ?.getString("accountId")
+                                        ?.toIntOrNull() ?: 0
+
+                                ExploreScreen(
+                                    navController = navController,
+                                    accountId = accountId
+                                )
                             }
 
-                            composable("SettingsScreen") {
-                                SettingsScreen(navController)
+                            composable("SettingsScreen/{accountId}") { backStackEntry ->
+
+                                val accountId =
+                                    backStackEntry.arguments
+                                        ?.getString("accountId")
+                                        ?.toIntOrNull() ?: 0
+
+                                SettingsScreen(
+                                    navController = navController,
+                                    accountId = accountId
+                                )
                             }
 
                             composable("ProfileScreen") {

@@ -27,7 +27,10 @@ import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
 
 @Composable
-fun SettingsScreen(navController: NavHostController) {
+fun SettingsScreen(
+    navController: NavHostController,
+    accountId: Int
+) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
     val horizontalPadding = if (widthClass == WindowWidthSizeClass.Compact) 20.dp else 45.dp
@@ -156,7 +159,10 @@ fun SettingsScreen(navController: NavHostController) {
             // Phần Banner & BottomNav (Fix lỗi image_a7c9d8.png)
             Column(modifier = Modifier.background(PurpleBg)) {
                 SettingsBanner(widthClass)
-                SquaredBottomNav(navController = navController)
+                SquaredBottomNav(
+                    navController = navController,
+                    accountId = accountId
+                )
             }
         }
     }

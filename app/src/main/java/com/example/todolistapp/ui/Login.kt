@@ -127,7 +127,9 @@ fun Login(navController: NavHostController) {
                 if (res.success) {
 
                     // 👉 NAV HOME
-                    navController.navigate("Home") {
+                    navController.navigate(
+                        "Home/${res.account?.account_id}"
+                    ) {
                         popUpTo("Login") { inclusive = true }
                     }
                 }

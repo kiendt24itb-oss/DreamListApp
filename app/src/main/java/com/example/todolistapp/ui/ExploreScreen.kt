@@ -28,7 +28,10 @@ import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
 
 @Composable
-fun ExploreScreen(navController: NavHostController) {
+fun ExploreScreen(
+    navController: NavHostController,
+    accountId: Int
+) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
@@ -95,7 +98,10 @@ fun ExploreScreen(navController: NavHostController) {
             // BOTTOM AREA
             Column(modifier = Modifier.background(PurpleBg)) {
                 ModernThinBanner(widthClass)
-                SquaredBottomNav(navController = navController)
+                SquaredBottomNav(
+                    navController = navController,
+                    accountId = accountId
+                )
             }
         }
     }

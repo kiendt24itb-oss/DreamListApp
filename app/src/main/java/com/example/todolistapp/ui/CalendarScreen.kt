@@ -29,7 +29,10 @@ import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
 
 @Composable
-fun CalendarScreen(navController: NavHostController) {
+fun CalendarScreen(
+    navController: NavHostController,
+    accountId: Int
+) {
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
@@ -120,7 +123,10 @@ fun CalendarScreen(navController: NavHostController) {
             // --- PHẦN DƯỚI CỐ ĐỊNH (BANNER & NAV) ---
             Column(modifier = Modifier.background(PurpleBg)) {
                 CalendarModernBanner(widthClass, horizontalPadding)
-                SquaredBottomNav(navController = navController)
+                SquaredBottomNav(
+                    navController = navController,
+                    accountId = accountId
+                )
             }
         }
     }
