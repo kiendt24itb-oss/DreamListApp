@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.todolistapp.R
+import com.example.todolistapp.utils.SessionManager
 import com.example.todolistapp.viewmodel.AuthViewModel
 
 @Composable
@@ -33,6 +35,8 @@ fun Login(navController: NavHostController) {
 
     // ===== VIEWMODEL =====
     val viewModel: AuthViewModel = viewModel()
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
 
     // ===== STATE =====
     var email by remember { mutableStateOf("") }
@@ -125,6 +129,9 @@ fun Login(navController: NavHostController) {
             // ===== LOGIN RESULT =====
             loginResult?.let { res ->
                 if (res.success) {
+                    res.account?.let { account ->
+                        sessionManager.saveUser(account.account_id, account.full_name, account.email)
+                    }
 
                     // 👉 NAV HOME
                     navController.navigate(

@@ -20,24 +20,64 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
+import com.example.todolistapp.utils.SessionManager
+import com.example.todolistapp.viewmodel.AuthViewModel
 
 @Composable
-fun Register(navController: NavHostController) { // Đã đồng bộ tham số
-    // Lấy size từ kho chứa toàn cục
+fun Register(navController: NavHostController) {
+    val viewModel: AuthViewModel = viewModel()
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+
+    var fullName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var infoMessage by remember { mutableStateOf<String?>(null) }
+    var isError by remember { mutableStateOf(false) }
+
+    val registerResult by viewModel.registerResult.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+
+    LaunchedEffect(registerResult) {
+        registerResult?.let { result ->
+            if (result.success) {
+                infoMessage = "Đăng ký thành công. Vui lòng đăng nhập."
+                isError = false
+                navController.navigate("Login") {
+                    popUpTo("Register") { inclusive = true }
+                }
+            } else {
+                infoMessage = result.message
+                isError = true
+            }
+        }
+    }
+
+    LaunchedEffect(error) {
+        if (error != null) {
+            infoMessage = error
+            isError = true
+        }
+    }
+
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
 
@@ -107,20 +147,37 @@ fun Register(navController: NavHostController) { // Đã đồng bộ tham số
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // Ô nhập liệu - GIỮ NGUYÊN
-            CustomTextField(value = "", onValueChange = {}, label = "Họ và tên", icon = Icons.Default.Person)
+            // Ô nhập liệu
+            CustomTextField(value = fullName, onValueChange = { fullName = it }, label = "Họ và tên", icon = Icons.Default.Person)
             Spacer(modifier = Modifier.height(12.dp))
-            CustomTextField(value = "", onValueChange = {}, label = "Email", icon = Icons.Default.Email)
+            CustomTextField(value = email, onValueChange = { email = it }, label = "Email", icon = Icons.Default.Email)
             Spacer(modifier = Modifier.height(12.dp))
-            CustomTextField(value = "", onValueChange = {}, label = "Mật khẩu", icon = Icons.Default.Lock, isPassword = true)
+            CustomTextField(value = password, onValueChange = { password = it }, label = "Mật khẩu", icon = Icons.Default.Lock, isPassword = true)
             Spacer(modifier = Modifier.height(12.dp))
-            CustomTextField(value = "", onValueChange = {}, label = "Xác nhận mật khẩu", icon = Icons.Default.Lock, isPassword = true)
+            CustomTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = "Xác nhận mật khẩu", icon = Icons.Default.Lock, isPassword = true)
 
             Spacer(modifier = Modifier.height(35.dp))
 
-            // Nút bấm - GIỮ NGUYÊN
-            GradientButton(text = "Tạo tài khoản") {
-                // Bạn có thể thêm logic đăng ký ở đây
+            // Nút bấm đăng ký
+            GradientButton(text = if (loading) "Đang tạo..." else "Tạo tài khoản") {
+                infoMessage = null
+                if (fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+                    infoMessage = "Vui lòng điền đủ thông tin."
+                    isError = true
+                } else if (password != confirmPassword) {
+                    infoMessage = "Mật khẩu và xác nhận mật khẩu không khớp."
+                    isError = true
+                } else {
+                    viewModel.register(fullName.trim(), email.trim(), password)
+                }
+            }
+
+            infoMessage?.let { messageText ->
+                Text(
+                    text = messageText,
+                    color = if (isError) Color.Red else Color.Green,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))

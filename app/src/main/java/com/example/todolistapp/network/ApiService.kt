@@ -7,6 +7,7 @@ import com.example.todolistapp.model.LoginResponse
 import com.example.todolistapp.model.RegisterRequest
 import com.example.todolistapp.model.Task
 import com.example.todolistapp.model.TaskResponse
+import com.example.todolistapp.model.ProfileResponse
 import com.example.todolistapp.model.UserProfile
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -50,10 +51,10 @@ interface ApiService {
 
     // ================= PROFILE =================
 
-    @GET("profile/get_profile.php")
+    @POST("profile/get_profile.php")
     suspend fun getProfile(
-        @Query("account_id") accountId: Int
-    ): UserProfile
+        @Body body: Map<String, Int>
+    ): ProfileResponse
 
     @POST("profile/update_profile.php")
     suspend fun updateProfile(

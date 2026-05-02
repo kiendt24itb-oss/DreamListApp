@@ -6,5 +6,7 @@ data class UserProfile(
     val age: Int?,
     val address: String?,
     val avatar_path: String?,
-    val notification_enabled: Boolean
+    val notification_enabled: Boolean,
+    val full_name: String? = null,
+    val email: String? = null
 )

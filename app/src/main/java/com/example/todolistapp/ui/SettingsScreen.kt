@@ -1,5 +1,10 @@
 package com.example.todolistapp.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -16,34 +21,107 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
+import com.example.todolistapp.model.UserProfile
+import com.example.todolistapp.utils.NotificationScheduler
+import com.example.todolistapp.utils.SessionManager
+import com.example.todolistapp.viewmodel.ProfileViewModel
 
 @Composable
 fun SettingsScreen(
     navController: NavHostController,
     accountId: Int
 ) {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val profileViewModel: ProfileViewModel = viewModel()
+    val profile by profileViewModel.profile.collectAsState()
+    val loading by profileViewModel.loading.collectAsState()
+    val message by profileViewModel.message.collectAsState()
+
     val windowSize = LocalWindowSizeClass.current
     val widthClass = windowSize.widthSizeClass
     val horizontalPadding = if (widthClass == WindowWidthSizeClass.Compact) 20.dp else 45.dp
 
-    // --- STATE ---
+    val displayName = sessionManager.getName().orEmpty().ifBlank { "Dreamer" }
+    val displayEmail = sessionManager.getEmail().orEmpty()
+
     var showChangePassDialog by remember { mutableStateOf(false) }
     var notificationEnabled by remember { mutableStateOf(true) }
-
+    var notificationInfo by remember { mutableStateOf("Nhận thông báo nhắc nhở mỗi 24h.") }
     var oldPass by remember { mutableStateOf("") }
     var newPass by remember { mutableStateOf("") }
     var confirmPass by remember { mutableStateOf("") }
+    var changePassMessage by remember { mutableStateOf<String?>(null) }
 
-    // --- DIALOG ĐỔI MẬT KHẨU ---
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            notificationEnabled = true
+            notificationInfo = "Thông báo đã bật. Ứng dụng sẽ nhắc 24h/lần."
+            NotificationScheduler.scheduleDailyReminder(context)
+            profile?.let { profileViewModel.updateProfile(it.copy(notification_enabled = true)) }
+        } else {
+            notificationEnabled = false
+            notificationInfo = "Quyền thông báo bị từ chối. Ứng dụng sẽ không thể gửi nhắc nhở."
+        }
+    }
+
+    LaunchedEffect(accountId) {
+        profileViewModel.getProfile(accountId)
+    }
+
+    LaunchedEffect(profile) {
+        profile?.let {
+            notificationEnabled = it.notification_enabled
+            notificationInfo = if (it.notification_enabled) {
+                "Thông báo bật. Ứng dụng sẽ nhắc 24h/lần."
+            } else {
+                "Thông báo tắt. Ứng dụng sẽ không gửi nhắc nhở."
+            }
+        }
+    }
+
+    fun updateNotificationState(enabled: Boolean) {
+        if (enabled) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+            notificationEnabled = true
+            notificationInfo = "Thông báo đã bật. Ứng dụng sẽ nhắc 24h/lần."
+            NotificationScheduler.scheduleDailyReminder(context)
+            profile?.let { profileViewModel.updateProfile(it.copy(notification_enabled = true)) }
+        } else {
+            notificationEnabled = false
+            notificationInfo = "Thông báo tắt. Ứng dụng sẽ không gửi nhắc nhở."
+            NotificationScheduler.cancelDailyReminder(context)
+            profile?.let { profileViewModel.updateProfile(it.copy(notification_enabled = false)) }
+        }
+    }
+
+    fun onLogout() {
+        sessionManager.logout()
+        navController.navigate("Login") {
+            popUpTo(0) { inclusive = true }
+        }
+    }
+
     if (showChangePassDialog) {
         AlertDialog(
             onDismissRequest = { showChangePassDialog = false },
@@ -51,27 +129,53 @@ fun SettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
-                        value = oldPass, onValueChange = { oldPass = it },
+                        value = oldPass,
+                        onValueChange = { oldPass = it },
                         label = { Text("Mật khẩu cũ") },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
-                        value = newPass, onValueChange = { newPass = it },
+                        value = newPass,
+                        onValueChange = { newPass = it },
                         label = { Text("Mật khẩu mới") },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
-                        value = confirmPass, onValueChange = { confirmPass = it },
+                        value = confirmPass,
+                        onValueChange = { confirmPass = it },
                         label = { Text("Xác nhận mật khẩu") },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    changePassMessage?.let {
+                        Text(text = it, color = Color.Red, fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = { showChangePassDialog = false }, colors = ButtonDefaults.buttonColors(DeepPurple)) {
+                Button(
+                    onClick = {
+                        when {
+                            oldPass.isBlank() || newPass.isBlank() || confirmPass.isBlank() -> {
+                                changePassMessage = "Vui lòng điền đủ thông tin."
+                            }
+                            newPass != confirmPass -> {
+                                changePassMessage = "Mật khẩu mới và xác nhận phải trùng nhau."
+                            }
+                            else -> {
+                                changePassMessage = "Đổi mật khẩu thành công."
+                                showChangePassDialog = false
+                                oldPass = ""
+                                newPass = ""
+                                confirmPass = ""
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(DeepPurple),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Text("Cập nhật")
                 }
             },
@@ -82,7 +186,6 @@ fun SettingsScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(PurpleBg)) {
-        // Nền mờ dần (Fix lỗi âm dương)
         Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.45f)) {
             Image(
                 painter = painterResource(id = R.drawable.bg_h),
@@ -96,18 +199,22 @@ fun SettingsScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
             Column(modifier = Modifier.statusBarsPadding().padding(horizontal = horizontalPadding, vertical = 30.dp)) {
-                Text("Cài đặt ✨", style = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, shadow = Shadow(color = Color.Black.copy(0.2f), blurRadius = 8f)))
+                Text(
+                    "Cài đặt ✨",
+                    style = TextStyle(
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        shadow = Shadow(color = Color.Black.copy(0.2f), blurRadius = 8f)
+                    )
+                )
                 Text("Quản lý tài khoản và trải nghiệm", fontSize = 15.sp, color = Color.White, fontWeight = FontWeight.Bold)
             }
 
-            // Danh sách cài đặt
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 SettingLabel("Tài khoản", horizontalPadding)
-
-                // Thẻ đầu tiên: Tĩnh, không icon, không nhấn (Fix ảnh image_a7c258.png)
-                UserCardStatic(widthClass, horizontalPadding)
+                UserCardStatic(widthClass, horizontalPadding, displayName, displayEmail, profile?.avatar_path)
 
                 SettingItemCard(
                     title = "Thông tin cá nhân",
@@ -130,33 +237,48 @@ fun SettingsScreen(
                     icon = Icons.Default.Notifications,
                     showSwitch = true,
                     switchState = notificationEnabled,
-                    onSwitchChange = { notificationEnabled = it },
+                    onSwitchChange = { updateNotificationState(it) },
                     hPadding = horizontalPadding,
-                    onClick = { notificationEnabled = !notificationEnabled }
+                    onClick = { updateNotificationState(!notificationEnabled) }
                 )
+                Text(
+                    text = notificationInfo,
+                    modifier = Modifier.padding(horizontal = horizontalPadding + 18.dp, vertical = 4.dp),
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+
+                if (loading) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = DeepPurple)
+                    }
+                }
+
+                message?.let {
+                    Text(
+                        text = it,
+                        modifier = Modifier.padding(horizontal = horizontalPadding + 18.dp, vertical = 6.dp),
+                        color = Color.Red,
+                        fontSize = 13.sp
+                    )
+                }
 
                 SettingLabel("Khác", horizontalPadding)
 
-                SettingItemCard("Điều khoản sử dụng", Icons.Default.Description, hPadding = horizontalPadding, onClick = { navController.navigate("TermsOfServiceScreen")})
-                SettingItemCard("Giới thiệu ứng dụng", Icons.Default.Info, hPadding = horizontalPadding, onClick = {navController.navigate("AboutAppScreen")})
+                SettingItemCard("Điều khoản sử dụng", Icons.Default.Description, hPadding = horizontalPadding, onClick = { navController.navigate("TermsOfServiceScreen") })
+                SettingItemCard("Giới thiệu ứng dụng", Icons.Default.Info, hPadding = horizontalPadding, onClick = { navController.navigate("AboutAppScreen") })
 
-                // Đăng xuất về LoginScreen
                 SettingItemCard(
                     title = "Đăng xuất",
                     icon = Icons.Default.ExitToApp,
                     isRed = true,
                     hPadding = horizontalPadding,
-                    onClick = {
-                        navController.navigate("Login") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
+                    onClick = { onLogout() }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // Phần Banner & BottomNav (Fix lỗi image_a7c9d8.png)
             Column(modifier = Modifier.background(PurpleBg)) {
                 SettingsBanner(widthClass)
                 SquaredBottomNav(
@@ -182,7 +304,13 @@ fun SettingLabel(text: String, hPadding: androidx.compose.ui.unit.Dp) {
 }
 
 @Composable
-fun UserCardStatic(widthClass: WindowWidthSizeClass, hPadding: androidx.compose.ui.unit.Dp) {
+fun UserCardStatic(
+    widthClass: WindowWidthSizeClass,
+    hPadding: androidx.compose.ui.unit.Dp,
+    displayName: String,
+    displayEmail: String,
+    avatarUrl: String?
+) {
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
         shape = RoundedCornerShape(26.dp),
@@ -190,14 +318,23 @@ fun UserCardStatic(widthClass: WindowWidthSizeClass, hPadding: androidx.compose.
         shadowElevation = 2.dp
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = null,
-                modifier = Modifier.size(58.dp).clip(CircleShape).background(PurpleBg)
-            )
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(58.dp).clip(CircleShape).background(PurpleBg)
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(58.dp).clip(CircleShape).background(PurpleBg)
+                )
+            }
             Column(modifier = Modifier.padding(start = 18.dp).weight(1f)) {
-                Text("Kiên ✨", fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = Color(0xFF1A1C2E))
-                Text("kien.nguyen@gmail.com", fontSize = 13.sp, color = Color.Gray)
+                Text(displayName, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = Color(0xFF1A1C2E))
+                Text(displayEmail, fontSize = 13.sp, color = Color.Gray)
             }
         }
     }

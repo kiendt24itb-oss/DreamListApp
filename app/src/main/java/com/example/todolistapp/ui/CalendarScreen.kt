@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,11 +22,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.ui.graphics.graphicsLayer
 import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
+import com.example.todolistapp.model.Task
+import com.example.todolistapp.viewmodel.TaskViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun CalendarScreen(
@@ -41,8 +48,30 @@ fun CalendarScreen(
     val headerFontSize = if (widthClass == WindowWidthSizeClass.Compact) 26.sp else 36.sp
     val sectionTitleSize = if (widthClass == WindowWidthSizeClass.Compact) 17.sp else 22.sp
 
+    val taskViewModel: TaskViewModel = viewModel()
+    val tasks by taskViewModel.tasks.collectAsState()
+    val loading by taskViewModel.loading.collectAsState()
+
+    val today = remember { Calendar.getInstance() }
+    var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
+    var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
+
+    LaunchedEffect(accountId) {
+        taskViewModel.loadTasks(accountId)
+    }
+
+    val selectedDateLabel = remember(selectedDate.timeInMillis) {
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(selectedDate.time)
+    }
+
+    val currentMonthTasks = tasks.filter { task -> taskInMonth(task, currentMonth) }
+    val totalTasks = currentMonthTasks.size
+    val doneTasks = currentMonthTasks.count {
+        it.status.equals("completed", true) || it.status.contains("hoàn", true)
+    }
+    val progress = if (totalTasks == 0) 0f else doneTasks.toFloat() / totalTasks
+
     Box(modifier = Modifier.fillMaxSize().background(PurpleBg)) {
-        // 1. Ảnh nền & Gradient
         Image(
             painter = painterResource(id = R.drawable.bg_h),
             contentDescription = null,
@@ -59,7 +88,6 @@ fun CalendarScreen(
         ))
 
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header thích ứng
             Column(
                 modifier = Modifier
                     .padding(start = horizontalPadding, end = horizontalPadding, top = 20.dp, bottom = 10.dp)
@@ -68,7 +96,6 @@ fun CalendarScreen(
                 Text("Lịch ước mơ ✨", fontSize = headerFontSize, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
-            // --- PHẦN TRÊN CỐ ĐỊNH (LỊCH & STATS) ---
             Column {
                 Surface(
                     modifier = Modifier
@@ -77,13 +104,40 @@ fun CalendarScreen(
                     color = Color.White
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        MonthSelectorMini(widthClass)
+                        MonthSelectorMini(
+                            widthClass = widthClass,
+                            currentMonth = currentMonth,
+                            onPrevMonth = {
+                                currentMonth = (currentMonth.clone() as Calendar).apply {
+                                    add(Calendar.MONTH, -1)
+                                    set(Calendar.DAY_OF_MONTH, 1)
+                                }
+                                selectedDate = (currentMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
+                            },
+                            onNextMonth = {
+                                currentMonth = (currentMonth.clone() as Calendar).apply {
+                                    add(Calendar.MONTH, 1)
+                                    set(Calendar.DAY_OF_MONTH, 1)
+                                }
+                                selectedDate = (currentMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
+                            },
+                            onToday = {
+                                currentMonth = today.clone() as Calendar
+                                selectedDate = today.clone() as Calendar
+                            }
+                        )
                         WeekHeaderMini(widthClass)
-                        CalendarGridMini(widthClass)
+                        CalendarGridMini(
+                            widthClass = widthClass,
+                            currentMonth = currentMonth,
+                            selectedDate = selectedDate,
+                            onSelectDay = { day ->
+                                selectedDate = (currentMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, day) }
+                            }
+                        )
                     }
                 }
 
-                // Stats Row thích ứng
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -91,36 +145,58 @@ fun CalendarScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CompactStatCard("28", "Tổng công việc", Icons.Default.MenuBook, DeepPurple, widthClass)
+                    CompactStatCard(totalTasks.toString(), "Tổng CV tháng", Icons.Default.MenuBook, DeepPurple, widthClass)
                     Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.LightGray.copy(alpha = 0.5f)))
-                    CompactProgressCard(0.67f, "Tiến độ", Color(0xFF03DAC6), widthClass)
+                    CompactProgressCard(progress, "Tiến độ tháng", Color(0xFF03DAC6), widthClass)
                 }
             }
 
-            // --- VÙNG CUỘN DANH SÁCH TASK ---
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    "Kế hoạch ngày 15/05",
+                    "Kế hoạch ngày $selectedDateLabel",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = sectionTitleSize,
                     color = DeepPurple,
                     modifier = Modifier.padding(horizontal = horizontalPadding, vertical = 8.dp)
                 )
 
-                // Task Items
-                DailyTaskItemSync("Đọc 30 trang sách", "07:00", "Hoàn thành", GreenStatus, Icons.Default.MenuBook, horizontalPadding)
-                DailyTaskItemSync("Tập luyện 30 phút", "18:00", "Hoàn thành", GreenStatus, Icons.Default.FitnessCenter, horizontalPadding)
-                DailyTaskItemSync("Hoàn thành bài luận", "19:30", "Đang làm", BlueStatus, Icons.Default.Edit, horizontalPadding)
-                DailyTaskItemSync("Thiền 10 phút", "21:30", "Chưa làm", OrangeStatus, Icons.Default.NightsStay, horizontalPadding)
+                if (loading) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding, vertical = 20.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = DeepPurple)
+                    }
+                } else {
+                    val taskItems = tasks.filter { task ->
+                        val taskDate = parseTaskDate(task.due_date)
+                        taskDate != null && taskDate == selectedDateLabel
+                    }
+
+                    if (taskItems.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding, vertical = 24.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Không có công việc trong ngày này.",
+                                color = SoftPurple,
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(0.8f)
+                            )
+                        }
+                    } else {
+                        taskItems.forEach { task ->
+                            FinalTaskItem(
+                                task = task,
+                                hPadding = horizontalPadding
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // --- PHẦN DƯỚI CỐ ĐỊNH (BANNER & NAV) ---
             Column(modifier = Modifier.background(PurpleBg)) {
                 CalendarModernBanner(widthClass, horizontalPadding)
                 SquaredBottomNav(
@@ -230,14 +306,34 @@ fun DailyTaskItemSync(title: String, time: String, status: String, statusColor: 
 }
 
 @Composable
-fun MonthSelectorMini(widthClass: WindowWidthSizeClass) {
+fun MonthSelectorMini(
+    widthClass: WindowWidthSizeClass,
+    currentMonth: Calendar,
+    onPrevMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onToday: () -> Unit
+) {
     val fontSize = if (widthClass == WindowWidthSizeClass.Compact) 16.sp else 20.sp
+    val monthLabel = remember(currentMonth.timeInMillis) {
+        "Tháng ${currentMonth.get(Calendar.MONTH) + 1}, ${currentMonth.get(Calendar.YEAR)}"
+    }
+
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Tháng 5, 2026", fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = DeepPurple)
+        Text(monthLabel, fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = DeepPurple)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {}, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.ChevronLeft, null, tint = DeepPurple) }
-            Text("Hôm nay", color = DeepPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp))
-            IconButton(onClick = {}, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.ChevronRight, null, tint = DeepPurple) }
+            IconButton(onClick = onPrevMonth, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.ChevronLeft, null, tint = DeepPurple)
+            }
+            Text(
+                "Hôm nay",
+                color = DeepPurple,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 6.dp).clickable { onToday() }
+            )
+            IconButton(onClick = onNextMonth, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.ChevronRight, null, tint = DeepPurple)
+            }
         }
     }
 }
@@ -251,25 +347,99 @@ fun WeekHeaderMini(widthClass: WindowWidthSizeClass) {
     }
 }
 
+private fun parseTaskDate(dueDate: String): String? {
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        parser.parse(dueDate)?.let { formatter.format(it) }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun parseTaskTime(dueDate: String): String {
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+        parser.parse(dueDate)?.let { formatter.format(it) } ?: ""
+    } catch (e: Exception) {
+        ""
+    }
+}
+
+private fun taskInMonth(task: Task, month: Calendar): Boolean {
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        parser.parse(task.due_date)?.let {
+            val taskCal = Calendar.getInstance().apply { time = it }
+            taskCal.get(Calendar.YEAR) == month.get(Calendar.YEAR) &&
+                taskCal.get(Calendar.MONTH) == month.get(Calendar.MONTH)
+        } ?: false
+    } catch (e: Exception) {
+        false
+    }
+}
+
+private fun statusColor(status: String): Color {
+    return when {
+        status.equals("completed", true) || status.contains("hoàn", true) -> GreenStatus
+        status.equals("pending", true) || status.contains("chưa", true) -> OrangeStatus
+        status.equals("in progress", true) || status.contains("đang", true) -> BlueStatus
+        else -> SoftPurple
+    }
+}
+
+private fun statusIcon(status: String): ImageVector {
+    return when {
+        status.equals("completed", true) || status.contains("hoàn", true) -> Icons.Default.CheckCircle
+        status.equals("pending", true) || status.contains("chưa", true) -> Icons.Default.Schedule
+        status.equals("in progress", true) || status.contains("đang", true) -> Icons.Default.PlayArrow
+        else -> Icons.Default.List
+    }
+}
+
 @Composable
-fun CalendarGridMini(widthClass: WindowWidthSizeClass) {
+fun CalendarGridMini(
+    widthClass: WindowWidthSizeClass,
+    currentMonth: Calendar,
+    selectedDate: Calendar,
+    onSelectDay: (Int) -> Unit
+) {
     val dayCircleSize = if (widthClass == WindowWidthSizeClass.Expanded) 40.dp else 30.dp
     val fontSize = if (widthClass == WindowWidthSizeClass.Compact) 12.sp else 14.sp
 
+    val firstDay = Calendar.getInstance().apply {
+        time = currentMonth.time
+        set(Calendar.DAY_OF_MONTH, 1)
+    }
+    val monthDays = currentMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
+    val offset = (firstDay.get(Calendar.DAY_OF_WEEK) + 5) % 7
+
     Column {
-        for (i in 0 until 5) {
+        for (row in 0 until 6) {
             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                for (j in 0 until 7) {
-                    val dayNum = i * 7 + j - 2
+                for (col in 0 until 7) {
+                    val cellIndex = row * 7 + col
+                    val dayNumber = cellIndex - offset + 1
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        if (dayNum in 1..31) {
+                        if (dayNumber in 1..monthDays) {
+                            val isSelected = selectedDate.get(Calendar.YEAR) == currentMonth.get(Calendar.YEAR) &&
+                                selectedDate.get(Calendar.MONTH) == currentMonth.get(Calendar.MONTH) &&
+                                selectedDate.get(Calendar.DAY_OF_MONTH) == dayNumber
                             Surface(
-                                modifier = Modifier.size(dayCircleSize),
+                                modifier = Modifier
+                                    .size(dayCircleSize)
+                                    .clickable { onSelectDay(dayNumber) },
                                 shape = CircleShape,
-                                color = if (dayNum == 15) DeepPurple else Color.Transparent
+                                color = if (isSelected) DeepPurple else Color.Transparent
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("$dayNum", color = if (dayNum == 15) Color.White else Color.Black, fontSize = fontSize, fontWeight = if(dayNum == 15) FontWeight.Bold else FontWeight.Normal)
+                                    Text(
+                                        "$dayNumber",
+                                        color = if (isSelected) Color.White else Color.Black,
+                                        fontSize = fontSize,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
                                 }
                             }
                         }

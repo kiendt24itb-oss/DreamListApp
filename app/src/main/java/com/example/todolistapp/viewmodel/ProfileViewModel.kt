@@ -22,15 +22,20 @@ class ProfileViewModel : ViewModel() {
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
+    private val _isError = MutableStateFlow(false)
+    val isError: StateFlow<Boolean> = _isError
+
 
     fun getProfile(accountId: Int) {
         viewModelScope.launch {
             _loading.value = true
+            _isError.value = false
 
             try {
                 _profile.value = repository.getProfile(accountId)
             } catch (e: Exception) {
                 _message.value = "Lỗi load profile"
+                _isError.value = true
             }
 
             _loading.value = false
@@ -43,6 +48,7 @@ class ProfileViewModel : ViewModel() {
             try {
                 val response: BaseResponse = repository.updateProfile(profile)
                 _message.value = response.message
+                _isError.value = !response.success
 
                 if (response.success) {
                     _profile.value = profile
@@ -50,6 +56,7 @@ class ProfileViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 _message.value = e.message
+                _isError.value = true
             }
         }
     }
