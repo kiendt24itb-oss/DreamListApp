@@ -46,9 +46,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.todolistapp.model.Task
+import com.example.todolistapp.repository.TaskRepository
+import kotlinx.coroutines.launch
+import java.util.Calendar
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
@@ -83,10 +88,17 @@ fun AddDreamScreen(
     var dreamTitle by remember { mutableStateOf("") }
     var dreamDesc by remember { mutableStateOf("") }
     var selectedDateTime by remember { mutableStateOf("Chọn ngày và giờ") }
-
+    var dueDateForServer by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var documentLink by remember { mutableStateOf("") }
     var showLinkDialog by remember { mutableStateOf(false) }
     var linkInput by remember { mutableStateOf("") }
     var currentLinkTarget by remember { mutableStateOf("") }
+    var showValidationDialog by remember { mutableStateOf(false) }
+    var validationMessage by remember { mutableStateOf("") }
+
+    val coroutineScope = rememberCoroutineScope()
+    val repository = remember { TaskRepository() }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -110,12 +122,17 @@ fun AddDreamScreen(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    val date = datePickerState.selectedDateMillis?.let {
-                        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it))
-                    } ?: ""
-                    // FIX LỖI Ở ĐÂY: Sửa lại cú pháp lấy phút
-                    val minute = String.format("%02d", timePickerState.minute)
-                    selectedDateTime = "$date - ${timePickerState.hour}:$minute"
+                    val selectedDateMillis = datePickerState.selectedDateMillis
+                    if (selectedDateMillis != null) {
+                        val calendar = Calendar.getInstance().apply {
+                            timeInMillis = selectedDateMillis
+                            set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                            set(Calendar.MINUTE, timePickerState.minute)
+                            set(Calendar.SECOND, 0)
+                        }
+                        selectedDateTime = SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault()).format(calendar.time)
+                        dueDateForServer = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+                    }
                     showTimePicker = false
                 }) { Text("Xong", color = DeepPurple, fontWeight = FontWeight.Bold) }
             },
@@ -139,7 +156,15 @@ fun AddDreamScreen(
                 )
             },
             confirmButton = {
-                Button(onClick = { showLinkDialog = false }, colors = ButtonDefaults.buttonColors(DeepPurple)) {
+                Button(onClick = {
+                    if (currentLinkTarget.contains("Địa điểm")) {
+                        location = linkInput
+                    } else {
+                        documentLink = linkInput
+                    }
+                    linkInput = ""
+                    showLinkDialog = false
+                }, colors = ButtonDefaults.buttonColors(DeepPurple)) {
                     Text("Lưu liên kết")
                 }
             }
@@ -228,7 +253,34 @@ fun AddDreamScreen(
                         .height(60.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Brush.horizontalGradient(listOf(Color(0xFF8E7CFF), Color(0xFF6C5CE7))))
-                        .clickable { /* Logic lưu toàn bộ */ },
+                        .clickable {
+                            if (dreamTitle.isBlank() || dueDateForServer.isBlank()) {
+                                validationMessage = "Vui lòng nhập tiêu đề và hạn hoàn thành."
+                                showValidationDialog = true
+                            } else {
+                                coroutineScope.launch {
+                                    val task = Task(
+                                        account_id = accountId,
+                                        title = dreamTitle,
+                                        description = dreamDesc.ifBlank { null },
+                                        status = "pending",
+                                        due_date = dueDateForServer,
+                                        document_link = documentLink.ifBlank { null },
+                                        location = location.ifBlank { null }
+                                    )
+                                    val response = repository.addTask(task)
+                                    if (response.success) {
+                                        navController.previousBackStackEntry
+                                            ?.savedStateHandle
+                                            ?.set("taskAdded", true)
+                                        navController.popBackStack()
+                                    } else {
+                                        validationMessage = response.message
+                                        showValidationDialog = true
+                                    }
+                                }
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Lưu ước mơ", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
@@ -239,7 +291,21 @@ fun AddDreamScreen(
                 SquaredBottomNav(
                     navController = navController,
                     accountId = accountId
-                )            }
+                )
+
+                if (showValidationDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showValidationDialog = false },
+                        title = { Text("Thông báo", fontWeight = FontWeight.Bold) },
+                        text = { Text(validationMessage) },
+                        confirmButton = {
+                            TextButton(onClick = { showValidationDialog = false }) {
+                                Text("Đóng", color = DeepPurple)
+                            }
+                        }
+                    )
+                }
+            }
         }
     }
 }

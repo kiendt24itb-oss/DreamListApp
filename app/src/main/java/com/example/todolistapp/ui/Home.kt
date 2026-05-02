@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.example.todolistapp.LocalWindowSizeClass
 import com.example.todolistapp.R
@@ -89,7 +90,19 @@ fun Home(
     val tasks by taskViewModel.tasks.collectAsState()
     val loading by taskViewModel.loading.collectAsState()
 
-    LaunchedEffect(Unit) {
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+
+    LaunchedEffect(currentBackStackEntry) {
+        val backStackEntry = currentBackStackEntry
+        backStackEntry?.savedStateHandle?.get<Boolean>("taskAdded")?.let { added ->
+            if (added) {
+                taskViewModel.loadTasks(accountId)
+                backStackEntry.savedStateHandle.set("taskAdded", false)
+            }
+        }
+    }
+
+    LaunchedEffect(accountId) {
         taskViewModel.loadTasks(accountId)
     }
 

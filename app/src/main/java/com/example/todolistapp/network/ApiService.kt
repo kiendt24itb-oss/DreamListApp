@@ -34,7 +34,7 @@ interface ApiService {
     ): TaskResponse
 
     @POST("tasks/add_task.php")
-    suspend fun addTasks(
+    suspend fun addTask(
         @Body task: Task
     ): BaseResponse
 

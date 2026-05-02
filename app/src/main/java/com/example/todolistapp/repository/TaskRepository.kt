@@ -13,7 +13,7 @@ class TaskRepository {
     }
 
     suspend fun addTask(task: Task): BaseResponse {
-        return api.addTasks(task)
+        return api.addTask(task)
     }
 
     suspend fun updateTask(task: Task): BaseResponse {
